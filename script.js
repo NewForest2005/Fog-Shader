@@ -48,8 +48,8 @@ function setup() {
 function draw() {
 
     // Color de la niebla
-    const fogColor = [0.8, 0.9, 1.0, 1.0];
-
+    const fogColor = [0.8, 0.9, 1.0, 1.0];  // Este es el color real de la niebal
+    // const fogColor = [0.0, 0.0, 0.0, 1.0];     // Este es un debug, para ver por que falla
     // Obtener valores de los sliders
     let fogNear = fogNearSlider.value();
     let fogFar = fogFarSlider.value();
@@ -80,17 +80,22 @@ function draw() {
     // Activar nuestro shader
     shader(fogShader);
 
-    // // Enviar uniformes al Fragment Shader
-    fogShader.setUniform('uTexture', textureImage);
-    fogShader.setUniform('uFogColor', fogColor);
-    fogShader.setUniform('uFogNear', fogNear);
-    fogShader.setUniform('uFogFar', fogFar);
+    // // // Enviar uniformes al Fragment Shader
+    // fogShader.setUniform('uTexture', textureImage);
+    // fogShader.setUniform('uFogColor', fogColor);
+    // fogShader.setUniform('uFogNear', fogNear);
+    // fogShader.setUniform('uFogFar', fogFar);
 
     // Renderizar cubos
     noStroke();
 
-    for (let i = 0; i <= numCubes; i++) {
+    for (let i = 0; i < numCubes; i++) {
 
+        fogShader.setUniform('uTexture', textureImage);
+        fogShader.setUniform('uFogColor', fogColor);
+        fogShader.setUniform('uFogNear', fogNear);
+        fogShader.setUniform('uFogFar', fogFar);
+        
         push();
 
         // Posición del cubo
@@ -113,7 +118,7 @@ function draw() {
 
 const vert = `
 
-    precision mediump float;
+    precision highp float;
 
     // Atributos de los vértices
     attribute vec3 aPosition;
