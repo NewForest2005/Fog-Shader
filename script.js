@@ -19,10 +19,7 @@ let modelYRotation = 0;
 function preload() {
 
     // Cargar los shaders
-    fogShader = loadShader(
-        'shaders/fog.vert',
-        'shaders/fog.frag'
-    );
+    fogShader = createShader(vert, frag);
 
     // Cargar textura
     textureImage = loadImage(
@@ -83,7 +80,7 @@ function draw() {
     // Activar nuestro shader
     shader(fogShader);
 
-    // Enviar uniformes al Fragment Shader
+    // // Enviar uniformes al Fragment Shader
     fogShader.setUniform('uTexture', textureImage);
     fogShader.setUniform('uFogColor', fogColor);
     fogShader.setUniform('uFogNear', fogNear);
@@ -113,3 +110,70 @@ function draw() {
         pop();
     }
 }
+
+const vert = `
+
+    precision mediump float;
+
+    // Atributos de los vértices
+    attribute vec3 aPosition;
+    attribute vec2 aTexCoord;
+
+    // Matrices proporcionadas por p5.js
+    uniform mat4 uModelViewMatrix;
+    uniform mat4 uProjectionMatrix;
+
+    // Coordenadas que enviaremos al Fragment Shader
+    varying vec2 vTexCoord;
+
+    void main() {
+
+        // Transformación del vértice
+        vec4 position = vec4(aPosition, 1.0);
+
+        gl_Position = uProjectionMatrix
+                    * uModelViewMatrix
+                    * position;
+
+        // Pasamos las coordenadas de textura
+        vTexCoord = aTexCoord;
+    }
+
+`
+
+const frag = `
+
+    precision mediump float;
+
+    // Coordenadas de textura
+    varying vec2 vTexCoord;
+
+    // Textura del objeto
+    uniform sampler2D uTexture;
+
+    // Configuración de la niebla
+    uniform vec4 uFogColor;
+    uniform float uFogNear;
+    uniform float uFogFar;
+
+    void main() {
+
+        // Obtener el color original de la textura
+        vec4 color = texture2D(uTexture, vTexCoord);
+
+        // Calcular la intensidad de la niebla
+        float fogAmount = smoothstep(
+            uFogNear,
+            uFogFar,
+            gl_FragCoord.z
+        );
+
+        // Mezclar el color original con la niebla
+        gl_FragColor = mix(
+            color,
+            uFogColor,
+            fogAmount
+        );
+    }
+
+`
