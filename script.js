@@ -36,10 +36,11 @@ function setup() {
 
     // Sliders
     createP('Fog Near');
-    fogNearSlider = createSlider(0, 1, 0.7, 0.001);
+    // La niebla empieza en el primer cubo de la izquierda.
+    fogNearSlider = createSlider(0, 1, 0.0, 0.001);
 
     createP('Fog Far');
-    fogFarSlider = createSlider(0, 1, 0.9, 0.001);
+    fogFarSlider = createSlider(0, 1, 0.85, 0.001);
 
     fogNearSlider.style('width', '200px');
     fogFarSlider.style('width', '200px');
@@ -51,8 +52,17 @@ function draw() {
     const fogColor = [0.8, 0.9, 1.0, 1.0];  // Este es el color real de la niebal
     // const fogColor = [0.0, 0.0, 0.0, 1.0];     // Este es un debug, para ver por que falla
     // Obtener valores de los sliders
-    let fogNear = fogNearSlider.value();
-    let fogFar = fogFarSlider.value();
+    // Convertimos los sliders a unidades de distancia de la cámara.
+    // La profundidad de pantalla (gl_FragCoord.z) no es lineal y provocaba
+    // que varios cubos cruzaran el umbral de niebla al mismo tiempo.
+    let fogNear = map(fogNearSlider.value(), 0, 1, 3.9, 28);
+    // En el mínimo, la transición termina entre el primer y el segundo cubo.
+    // Así, con ambos sliders a la izquierda, solo queda visible el primero.
+    let fogFar = map(fogFarSlider.value(), 0, 1, 5.0, 40);
+
+    // Mantener siempre una transición válida, aunque Near se desplace
+    // temporalmente más allá de Far.
+    fogFar = max(fogFar, fogNear + 1.0);
 
     // Limpiar pantalla
     background(204, 230, 255);
@@ -66,7 +76,7 @@ function draw() {
     );
 
     camera(
-        0, 0, 2,
+        0, 0, 4.394,
         0, 0, 0,
         0, 1, 0
     );
@@ -130,6 +140,7 @@ const vert = `
 
     // Coordenadas que enviaremos al Fragment Shader
     varying vec2 vTexCoord;
+    varying float vDepth;
 
     void main() {
 
@@ -142,6 +153,9 @@ const vert = `
 
         // Pasamos las coordenadas de textura
         vTexCoord = aTexCoord;
+
+        // Profundidad lineal en el espacio de la cámara.
+        vDepth = -(uModelViewMatrix * position).z;
     }
 
 `
@@ -152,6 +166,7 @@ const frag = `
 
     // Coordenadas de textura
     varying vec2 vTexCoord;
+    varying float vDepth;
 
     // Textura del objeto
     uniform sampler2D uTexture;
@@ -166,11 +181,12 @@ const frag = `
         // Obtener el color original de la textura
         vec4 color = texture2D(uTexture, vTexCoord);
 
-        // Calcular la intensidad de la niebla
+        // Distancia lineal desde la cámara. A diferencia de gl_FragCoord.z,
+        // esta distancia no se comprime por la perspectiva.
         float fogAmount = smoothstep(
             uFogNear,
             uFogFar,
-            gl_FragCoord.z
+            vDepth
         );
 
         // Mezclar el color original con la niebla
