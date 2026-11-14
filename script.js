@@ -30,10 +30,10 @@ function setup() {
 
     // Sliders
     createP('Fog Near');
-    fogNearSlider = createSlider(0, 1, 0.0, 0.001);
+    fogNearSlider = createSlider(0, 1, 0.7, 0.001);
 
     createP('Fog Far');
-    fogFarSlider = createSlider(0, 1, 0.85, 0.001);
+    fogFarSlider = createSlider(0, 1, 0.9, 0.001);
 
     fogNearSlider.style('width', '200px');
     fogFarSlider.style('width', '200px');
@@ -43,10 +43,8 @@ function draw() {
 
 
     const fogColor = [0.8, 0.9, 1.0, 1.0];
-    let fogNear = map(fogNearSlider.value(), 0, 1, 3.9, 28);
-    let fogFar = map(fogFarSlider.value(), 0, 1, 5.0, 40);
-
-    fogFar = max(fogFar, fogNear + 1.0);
+    let fogNear = fogNearSlider.value();
+    let fogFar = fogFarSlider.value();
 
     background(204, 230, 255);
 
@@ -58,7 +56,7 @@ function draw() {
     );
 
     camera(
-        0, 0, 4.394,
+        0, 0, 2,
         0, 0, 0,
         0, 1, 0
     );
@@ -107,7 +105,6 @@ const vert = `
     uniform mat4 uProjectionMatrix;
 
     varying vec2 vTexCoord;
-    varying float vDepth;
 
     void main() {
 
@@ -117,7 +114,6 @@ const vert = `
                     * position;
 
         vTexCoord = aTexCoord;
-        vDepth = -(uModelViewMatrix * position).z;
     }
 
 `
@@ -127,7 +123,6 @@ const frag = `
     precision mediump float;
 
     varying vec2 vTexCoord;
-    varying float vDepth;
 
     uniform sampler2D uTexture;
     uniform vec4 uFogColor;
@@ -138,11 +133,11 @@ const frag = `
 
         vec4 color = texture2D(uTexture, vTexCoord);
 
-        // Distancia desde la cámara (no se comprime por la perspectiva)
+        // Calcular la intensidad de la niebla
         float fogAmount = smoothstep(
             uFogNear,
             uFogFar,
-            vDepth
+            gl_FragCoord.z
         );
 
         gl_FragColor = mix(
