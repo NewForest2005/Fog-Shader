@@ -46,6 +46,17 @@ function draw() {
     let fogNear = fogNearSlider.value();
     let fogFar = fogFarSlider.value();
 
+    // smoothstep necesita un rango válido. Si los sliders coinciden o Near
+    // queda por encima de Far, mantenemos una separación mínima de 0.001.
+    if (fogFar <= fogNear) {
+        if (fogNear < 1.0) {
+            fogFar = fogNear + 0.001;
+        } else {
+            fogNear = 0.999;
+            fogFar = 1.0;
+        }
+    }
+
     background(204, 230, 255);
 
     perspective(
